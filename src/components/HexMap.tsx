@@ -275,6 +275,7 @@ export function HexMap({
         <span><i className="lg lg-boss" /> Boss</span>
         <span><i className="lg lg-quest" /> Quest</span>
         <span><i className="lg lg-move" /> Can move</span>
+        <span>Tiles lock as a modular hex board</span>
       </div>
 
       <svg
@@ -344,13 +345,28 @@ export function HexMap({
                 }
               }}
             >
+              {/* Modular tile base + raised face so hexes read as locking components */}
+              <polygon
+                className="hex-tile-base"
+                points={hexPolygonPoints(x, y + 1.5, size - 0.4)}
+                fill="rgba(0,0,0,0.35)"
+                stroke="none"
+              />
               <polygon
                 className={`hex ${isSelected ? 'selected' : ''} ${owner ? 'owned' : ''} ${canMove ? 'movable' : ''}`}
                 points={hexPolygonPoints(x, y, size - 1.2)}
                 fill={fill}
                 stroke={stroke}
-                strokeWidth={isSelected ? 3 : canMove ? 2.4 : owner ? 2 : 1.2}
+                strokeWidth={isSelected ? 3 : canMove ? 2.4 : owner ? 2 : 1.4}
                 opacity={explored ? 1 : 0.45}
+              />
+              <polygon
+                className="hex-tile-bevel"
+                points={hexPolygonPoints(x, y - 0.6, size - 3.5)}
+                fill="none"
+                stroke="rgba(255,255,255,0.12)"
+                strokeWidth={1}
+                opacity={explored ? 1 : 0.3}
               />
 
               {explored && <TerrainDecor terrain={tile.terrain} x={x} y={y} size={size} />}

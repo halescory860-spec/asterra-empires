@@ -19,15 +19,35 @@ import {
   FACTIONS,
   HERO_PERKS,
   RESOURCE_LABELS,
-  TECH_TREE,
   TERRAIN_META,
   UNIT_ROLES,
 } from '../game/data'
 import { axialDistance, findTile, hexNeighbors } from '../game/hex'
-import type { BuildingType, GameState, UnitRole } from '../game/types'
+import type { BuildingType, FocusAction, GameState, UnitRole } from '../game/types'
+import { FocusMat } from './FocusMat'
 import { HexMap } from './HexMap'
+import { PlayerDashboard } from './PlayerDashboard'
+import { TechnologyMat } from './TechnologyMat'
 
-type Tab = 'realm' | 'city' | 'hero' | 'quests' | 'tech' | 'craft' | 'diplomacy'
+type Tab = 'realm' | 'city' | 'hero' | 'quests' | 'tech' | 'craft' | 'diplomacy' | 'dashboard'
+
+const FOCUS_TO_TAB: Record<FocusAction, Tab> = {
+  expand: 'realm',
+  build: 'city',
+  research: 'tech',
+  quest: 'quests',
+  diplomacy: 'diplomacy',
+  dashboard: 'dashboard',
+}
+
+const TAB_TO_FOCUS: Partial<Record<Tab, FocusAction>> = {
+  realm: 'expand',
+  city: 'build',
+  tech: 'research',
+  quests: 'quest',
+  diplomacy: 'diplomacy',
+  dashboard: 'dashboard',
+}
 
 export function GameShell({
   state,
@@ -38,7 +58,7 @@ export function GameShell({
   apply: (fn: (s: GameState) => GameState) => void
   onResign: () => void
 }) {
-  const [tab, setTab] = useState<Tab>('realm')
+  const [tab, setTab] = useState<Tab>('dashboard')
   const [selected, setSelected] = useState<{ q: number; r: number } | null>(() => {
     const capital = Object.values(state.cities).find((c) => c.ownerId === state.players.find((p) => p.isHuman)?.id)
     return capital ? { q: capital.q, r: capital.r } : null
@@ -99,19 +119,25 @@ export function GameShell({
   }
 
   const tabs: { id: Tab; label: string }[] = [
+    { id: 'dashboard', label: 'Dash' },
     { id: 'realm', label: 'Realm' },
     { id: 'city', label: 'City' },
     { id: 'hero', label: 'Hero' },
     { id: 'quests', label: 'Quests' },
-    { id: 'tech', label: 'Tech' },
+    { id: 'tech', label: 'Tech Mat' },
     { id: 'craft', label: 'Craft' },
     { id: 'diplomacy', label: 'Diplomacy' },
   ]
+
+  const focusAction: FocusAction = TAB_TO_FOCUS[tab] ?? 'expand'
 
   return (
     <div className="shell">
       <header className="topbar">
         <div className="topbar__brand">ASTERRA</div>
+        <div className="topbar__topic" style={{ color: faction.accent }}>
+          Table Top: {faction.tableTop}
+        </div>
         <div className="resources">
           {(Object.keys(RESOURCE_LABELS) as (keyof typeof RESOURCE_LABELS)[]).map((key) => (
             <span key={key}>
@@ -130,8 +156,15 @@ export function GameShell({
         </div>
       </header>
 
+      <FocusMat
+        active={focusAction}
+        locked={!isMyTurn}
+        onSelect={(action) => setTab(FOCUS_TO_TAB[action])}
+      />
+
       <div className="shell__main">
         <div className="map-wrap">
+          <div className="map-tile-banner">Modular Map Tiles · hex geography locks together each game</div>
           <HexMap
             state={state}
             selected={selected}
@@ -155,6 +188,10 @@ export function GameShell({
           </div>
 
           <div className="sidebar__body">
+            {tab === 'dashboard' && (
+              <PlayerDashboard state={state} player={human} faction={faction} />
+            )}
+
             {tab === 'realm' && (
               <RealmPanel
                 state={state}
@@ -212,7 +249,7 @@ export function GameShell({
             )}
 
             {tab === 'tech' && (
-              <TechPanel
+              <TechnologyMat
                 state={state}
                 humanId={human.id}
                 isMyTurn={isMyTurn}
@@ -571,52 +608,6 @@ function QuestPanel({
           </button>
         ))}
       </div>
-    </div>
-  )
-}
-
-function TechPanel({
-  state,
-  humanId,
-  isMyTurn,
-  onResearch,
-}: {
-  state: GameState
-  humanId: number
-  isMyTurn: boolean
-  onResearch: (id: string) => void
-}) {
-  const player = state.players.find((p) => p.id === humanId)!
-  const cats = ['military', 'magic', 'civilization'] as const
-
-  return (
-    <div>
-      <h2 style={{ color: 'var(--gold)', fontSize: '1rem' }}>Technology Tree</h2>
-      <p className="muted">Research points: {player.researchPoints}</p>
-      {cats.map((cat) => (
-        <div key={cat} style={{ marginTop: '0.75rem' }}>
-          <h3 style={{ textTransform: 'capitalize', color: 'var(--copper-bright)', fontSize: '0.9rem' }}>
-            {cat}
-          </h3>
-          <div className="list-actions">
-            {TECH_TREE.filter((t) => t.category === cat).map((t) => {
-              const done = player.researched.includes(t.id)
-              const locked = !t.requires.every((r) => player.researched.includes(r))
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  disabled={!isMyTurn || done || locked || player.researchPoints < t.cost}
-                  onClick={() => onResearch(t.id)}
-                >
-                  {t.name} ({t.cost}) — {t.description}
-                  {done ? ' ✓' : ''}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      ))}
     </div>
   )
 }
