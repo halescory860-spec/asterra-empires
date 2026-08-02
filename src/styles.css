@@ -400,13 +400,13 @@ h3,
 @media (max-width: 980px) {
   .shell__main {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(240px, 42%) minmax(0, 1fr);
+    grid-template-rows: minmax(280px, 48%) minmax(0, 1fr);
   }
 
   .map-wrap {
     border-right: none;
     border-bottom: 1px solid var(--line);
-    min-height: 240px;
+    min-height: 300px;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -433,20 +433,86 @@ h3,
 
 .map-wrap {
   position: relative;
-  min-height: 520px;
+  min-height: 560px;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   touch-action: pan-x pan-y;
   border-right: 1px solid var(--line);
   background:
-    radial-gradient(ellipse at 50% 30%, rgba(61, 122, 122, 0.08), transparent 50%),
-    #100d0a;
+    radial-gradient(ellipse at 50% 30%, rgba(61, 122, 122, 0.1), transparent 50%),
+    linear-gradient(180deg, #16120e, #100d0a 60%, #0c0a08);
+}
+
+.map-stage {
+  position: relative;
+  min-width: min-content;
+  padding-bottom: 0.5rem;
+}
+
+.map-legend {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.85rem;
+  padding: 0.55rem 0.75rem;
+  background: rgba(14, 12, 10, 0.92);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.lg {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 1px solid var(--line);
+}
+
+.lg-city {
+  background: #5a4030;
+  border-color: #d4a574;
+}
+
+.lg-capital {
+  background: #c9a227;
+}
+
+.lg-squad {
+  background: #3d7a7a;
+  border-radius: 50%;
+}
+
+.lg-boss {
+  background: #4a1010;
+  border-color: #e07a3a;
+  border-radius: 50%;
+}
+
+.lg-quest {
+  background: #c9a227;
+  border-radius: 50%;
+}
+
+.lg-move {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px #5aa0a0;
 }
 
 .map-svg {
   display: block;
-  margin: 1rem auto;
+  margin: 0.5rem auto 1rem;
   max-width: none;
   touch-action: manipulation;
 }
@@ -458,21 +524,76 @@ h3,
 
 @media (hover: hover) and (pointer: fine) {
   .hex:hover {
-    filter: brightness(1.15);
+    filter: brightness(1.12);
   }
 }
 
 .hex:active {
-  filter: brightness(1.2);
+  filter: brightness(1.18);
 }
 
 .hex.selected {
   stroke: var(--gold-bright) !important;
-  stroke-width: 2.5;
+  stroke-width: 3;
+  filter: brightness(1.08);
+}
+
+.hex.movable {
+  filter: brightness(1.06);
 }
 
 .hex.owned {
-  stroke-width: 1.8;
+  stroke-width: 2;
+}
+
+.city-name {
+  font-family: var(--font-display);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+.squad-glyph,
+.boss-glyph,
+.quest-glyph {
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.squad-label,
+.boss-label {
+  font-family: var(--font-display);
+  font-size: 7.5px;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+.terrain-abbr {
+  font-family: var(--font-display);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.fog-label {
+  font-family: var(--font-display);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.inspect-card {
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.28);
+  padding: 0.65rem 0.75rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.inspect-card strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
 }
 
 .sidebar {

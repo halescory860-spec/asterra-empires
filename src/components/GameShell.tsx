@@ -23,7 +23,7 @@ import {
   TERRAIN_META,
   UNIT_ROLES,
 } from '../game/data'
-import { axialDistance, findTile } from '../game/hex'
+import { axialDistance, findTile, hexNeighbors } from '../game/hex'
 import type { BuildingType, GameState, UnitRole } from '../game/types'
 import { HexMap } from './HexMap'
 
@@ -39,8 +39,14 @@ export function GameShell({
   onResign: () => void
 }) {
   const [tab, setTab] = useState<Tab>('realm')
-  const [selected, setSelected] = useState<{ q: number; r: number } | null>(null)
-  const [selectedSquadId, setSelectedSquadId] = useState<string | null>(null)
+  const [selected, setSelected] = useState<{ q: number; r: number } | null>(() => {
+    const capital = Object.values(state.cities).find((c) => c.ownerId === state.players.find((p) => p.isHuman)?.id)
+    return capital ? { q: capital.q, r: capital.r } : null
+  })
+  const [selectedSquadId, setSelectedSquadId] = useState<string | null>(() => {
+    const humanPlayer = state.players.find((p) => p.isHuman)
+    return humanPlayer?.squads[0] ?? null
+  })
 
   const human = state.players.find((p) => p.isHuman)!
   const active = state.players.find((p) => p.id === state.activePlayerId)!
@@ -58,6 +64,17 @@ export function GameShell({
       : null
 
   const mySquads = human.squads.map((id) => state.squads[id]!).filter(Boolean)
+
+  const activeSquad =
+    (selectedSquadId && state.squads[selectedSquadId]) ||
+    (selectedSquad && selectedSquad.ownerId === human.id ? selectedSquad : null) ||
+    mySquads[0] ||
+    null
+
+  const moveHints: [number, number][] =
+    isMyTurn && activeSquad && activeSquad.ownerId === human.id && activeSquad.movesLeft > 0
+      ? hexNeighbors(activeSquad.q, activeSquad.r).filter(([q, r]) => !!findTile(state.map, q, r))
+      : []
 
   const onSelect = (q: number, r: number) => {
     const squadHere = Object.values(state.squads).find((s) => s.q === q && s.r === r)
@@ -115,7 +132,12 @@ export function GameShell({
 
       <div className="shell__main">
         <div className="map-wrap">
-          <HexMap state={state} selected={selected} onSelect={onSelect} />
+          <HexMap
+            state={state}
+            selected={selected}
+            onSelect={onSelect}
+            moveHints={moveHints}
+          />
         </div>
 
         <aside className="sidebar">
@@ -274,12 +296,43 @@ function RealmPanel({
   const boss = selectedTile
     ? state.bosses.find((b) => !b.defeated && b.q === selectedTile.q && b.r === selectedTile.r)
     : null
+  const cityHere = selectedTile
+    ? Object.values(state.cities).find((c) => c.q === selectedTile.q && c.r === selectedTile.r)
+    : null
+  const questHere = selectedTile
+    ? state.quests.find(
+        (q) => !q.completed && q.locationQ === selectedTile.q && q.locationR === selectedTile.r,
+      )
+    : null
 
   return (
     <div>
       <h2 style={{ color: 'var(--gold)', fontSize: '1rem', marginBottom: '0.75rem' }}>Hex & Squads</h2>
+      <p className="muted" style={{ marginTop: 0 }}>
+        Cities show as keeps with names. Teal outline = legal move. Tap a squad, then an outlined hex.
+      </p>
       {selectedTile ? (
         <>
+          {cityHere && (
+            <div className="inspect-card">
+              <strong style={{ color: 'var(--gold)' }}>
+                {cityHere.isCapital === cityHere.ownerId ? 'Capital · ' : 'City · '}
+                {cityHere.name}
+              </strong>
+              <div className="stat-row">
+                <span>Owner</span>
+                <strong>{state.players.find((p) => p.id === cityHere.ownerId)?.name}</strong>
+              </div>
+              <div className="stat-row">
+                <span>Level</span>
+                <strong>{cityHere.level}</strong>
+              </div>
+              <div className="stat-row">
+                <span>Buildings</span>
+                <strong>{cityHere.buildings.map((b) => BUILDINGS[b].name).join(', ')}</strong>
+              </div>
+            </div>
+          )}
           <div className="stat-row">
             <span>Terrain</span>
             <strong>{TERRAIN_META[selectedTile.terrain].label}</strong>
@@ -296,9 +349,23 @@ function RealmPanel({
                 : state.players.find((p) => p.id === selectedTile.ownerId)?.name}
             </strong>
           </div>
+          {selectedSquad && (
+            <div className="inspect-card">
+              <strong>Squad · {selectedSquad.name}</strong>
+              <div className="muted">
+                {selectedSquad.units.filter((u) => u.hp > 0).length} living · moves {selectedSquad.movesLeft}
+              </div>
+            </div>
+          )}
           {boss && (
             <p className="muted">
               Boss here: {boss.name} ({boss.hp}/{boss.maxHp})
+            </p>
+          )}
+          {questHere && (
+            <p className="muted">
+              Quest here: {questHere.title}
+              {questHere.acceptedBy === humanId ? ' (accepted)' : ''}
             </p>
           )}
         </>
