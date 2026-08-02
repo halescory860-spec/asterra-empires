@@ -67,11 +67,23 @@ export type GamePhase =
 
 export type Resources = Record<ResourceType, number>
 
+export type TableLegId = 'government' | 'agriculture' | 'art' | 'technology'
+
+export interface TableLeg {
+  id: TableLegId
+  name: string
+  detail: string
+}
+
 export interface FactionDef {
   id: FactionId
   name: string
   tagline: string
   traits: string[]
+  /** The Table Top: main topic of this faction's civilization */
+  tableTop: string
+  /** The Four Legs: supporting details under the main topic */
+  legs: TableLeg[]
   color: string
   accent: string
   bonuses: {
@@ -86,6 +98,14 @@ export interface FactionDef {
     bossBonus: number
   }
 }
+
+export type FocusAction =
+  | 'expand'
+  | 'build'
+  | 'research'
+  | 'quest'
+  | 'diplomacy'
+  | 'dashboard'
 
 export interface HeroPerk {
   id: string

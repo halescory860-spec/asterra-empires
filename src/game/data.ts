@@ -16,6 +16,13 @@ export const FACTIONS: FactionDef[] = [
     name: 'The Iron Legion',
     tagline: 'Roman-forged discipline. Walls that do not yield.',
     traits: ['Strong defenses', 'Cheap armies', 'Bonus to city building'],
+    tableTop: 'The Ancient Roman Civilization',
+    legs: [
+      { id: 'government', name: 'Government', detail: 'Senates, law, and ordered rule of cities.' },
+      { id: 'agriculture', name: 'Agriculture', detail: 'Farms and grain that feed the legions.' },
+      { id: 'art', name: 'Art', detail: 'Monuments, forums, and civic grandeur.' },
+      { id: 'technology', name: 'Technology', detail: 'Roads, engineering, and siegecraft.' },
+    ],
     color: '#8b4513',
     accent: '#c9a227',
     bonuses: {
@@ -35,6 +42,13 @@ export const FACTIONS: FactionDef[] = [
     name: 'The Stormclans',
     tagline: 'Viking fury. Raid hard. Leave nothing.',
     traits: ['Excellent melee', 'Faster exploration', 'Raid enemy resources'],
+    tableTop: 'The Norse Seafarer Kingdoms',
+    legs: [
+      { id: 'government', name: 'Government', detail: 'Jarls, oaths, and clan councils.' },
+      { id: 'agriculture', name: 'Agriculture', detail: 'Fishing, herds, and coastal harvests.' },
+      { id: 'art', name: 'Art', detail: 'Sagas, carved ships, and hall songs.' },
+      { id: 'technology', name: 'Technology', detail: 'Longships, ironwork, and navigation.' },
+    ],
     color: '#2f4f6f',
     accent: '#7eb8da',
     bonuses: {
@@ -54,6 +68,13 @@ export const FACTIONS: FactionDef[] = [
     name: 'The Arcane Dominion',
     tagline: 'Power woven from starlight and ruin.',
     traits: ['Powerful mages', 'Summon creatures', 'Faster research', 'Weak armor'],
+    tableTop: 'The Arcane Scholar Realms',
+    legs: [
+      { id: 'government', name: 'Government', detail: 'Archmage courts and tower law.' },
+      { id: 'agriculture', name: 'Agriculture', detail: 'Mana gardens and crystal orchards.' },
+      { id: 'art', name: 'Art', detail: 'Spellcraft, relics, and luminous script.' },
+      { id: 'technology', name: 'Technology', detail: 'Research, portals, and summoning.' },
+    ],
     color: '#3d2a5c',
     accent: '#b8a0e0',
     bonuses: {
@@ -73,6 +94,13 @@ export const FACTIONS: FactionDef[] = [
     name: 'The Wild Hunt',
     tagline: 'Rangers, beasts, and the endless green.',
     traits: ['Fast movement', 'Animals fight beside them', 'Excellent scouts'],
+    tableTop: 'The Woodland Ranger Peoples',
+    legs: [
+      { id: 'government', name: 'Government', detail: 'Circle councils and trail law.' },
+      { id: 'agriculture', name: 'Agriculture', detail: 'Foraging, groves, and living harvests.' },
+      { id: 'art', name: 'Art', detail: 'Beastsong, totems, and green rites.' },
+      { id: 'technology', name: 'Technology', detail: 'Scouting paths, bows, and beastcraft.' },
+    ],
     color: '#2d4a22',
     accent: '#8fbc6a',
     bonuses: {
@@ -92,6 +120,13 @@ export const FACTIONS: FactionDef[] = [
     name: 'The Ashborn',
     tagline: 'Monster hunters. Elite blades. Legendary craft.',
     traits: ['Elite small squads', 'Boss-slayer bonuses', 'Craft legendary weapons'],
+    tableTop: 'The Monster-Hunter Guilds',
+    legs: [
+      { id: 'government', name: 'Government', detail: 'Guild charters and hunter ranks.' },
+      { id: 'agriculture', name: 'Agriculture', detail: 'Provision stores and trail rations.' },
+      { id: 'art', name: 'Art', detail: 'Legendary arms and trophy craft.' },
+      { id: 'technology', name: 'Technology', detail: 'Smithing, alchemy, and beast lore.' },
+    ],
     color: '#5c2218',
     accent: '#e07a3a',
     bonuses: {

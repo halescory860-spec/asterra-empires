@@ -51,6 +51,9 @@ export function Setup({
               >
                 <strong style={{ color: f.accent }}>{f.name}</strong>
                 <p>{f.tagline}</p>
+                <p className="faction-topic">
+                  <span>Table Top</span> {f.tableTop}
+                </p>
                 <ul>
                   {f.traits.map((t) => (
                     <li key={t}>{t}</li>
@@ -63,6 +66,27 @@ export function Setup({
 
         <section className="panel">
           <h2>Campaign Setup</h2>
+
+          {(() => {
+            const selected = FACTIONS.find((f) => f.id === factionId)!
+            return (
+              <div className="setup-tabletop">
+                <p className="badge">The Table Top</p>
+                <h3 style={{ color: selected.accent, margin: '0.35rem 0 0.5rem' }}>{selected.tableTop}</h3>
+                <p className="muted" style={{ marginTop: 0 }}>
+                  Four Legs — supporting details of this civilization:
+                </p>
+                <div className="setup-legs">
+                  {selected.legs.map((leg) => (
+                    <div key={leg.id} className="setup-leg">
+                      <strong>{leg.name}</strong>
+                      <span className="muted">{leg.detail}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
 
           <div className="field">
             <label htmlFor="ruler">Ruler name</label>
