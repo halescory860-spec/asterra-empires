@@ -106,6 +106,30 @@ export type FocusAction =
   | 'quest'
   | 'diplomacy'
   | 'dashboard'
+  | 'lore'
+
+export type LoreCategory = 'legend' | 'origin' | 'record' | 'echo'
+
+export interface LoreEntry {
+  id: string
+  category: LoreCategory
+  title: string
+  summary: string
+  body: string
+  tags: string[]
+  unlockedAtTurn: number
+  discoveredBy: number
+}
+
+export interface LoreState {
+  unlocked: LoreEntry[]
+  seenIds: string[]
+}
+
+export interface LoreUnlock {
+  id: string
+  reason: string
+}
 
 export interface HeroPerk {
   id: string
@@ -267,6 +291,7 @@ export interface GameState {
   bosses: Boss[]
   diplomacy: DiplomacyLink[]
   combat: CombatState | null
+  lore: LoreState
   eventLog: string[]
   winnerId: number | null
   winReason: string | null

@@ -5,6 +5,7 @@ const ACTIONS: { id: FocusAction; label: string; hint: string }[] = [
   { id: 'build', label: 'Build', hint: 'Construct city buildings and wonders' },
   { id: 'research', label: 'Research', hint: 'Advance science & culture on the Tech Mat' },
   { id: 'quest', label: 'Quest', hint: 'Accept and complete legendary missions' },
+  { id: 'lore', label: 'LORE', hint: 'Legends, Origins, Records, Echoes codex' },
   { id: 'diplomacy', label: 'Diplomacy', hint: 'Alliances, peace, and war' },
   { id: 'dashboard', label: 'Dashboard', hint: 'Resources, military, population, four legs' },
 ]
@@ -30,7 +31,7 @@ export function FocusMat({
             key={action.id}
             type="button"
             className={`focus-slot ${active === action.id ? 'active' : ''}`}
-            disabled={locked && action.id !== 'dashboard'}
+            disabled={locked && action.id !== 'dashboard' && action.id !== 'lore'}
             onClick={() => onSelect(action.id)}
           >
             <span className="focus-slot__index">{index + 1}</span>

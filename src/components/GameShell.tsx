@@ -26,16 +26,18 @@ import { axialDistance, findTile, hexNeighbors } from '../game/hex'
 import type { BuildingType, FocusAction, GameState, UnitRole } from '../game/types'
 import { FocusMat } from './FocusMat'
 import { HexMap } from './HexMap'
+import { LoreCodex } from './LoreCodex'
 import { PlayerDashboard } from './PlayerDashboard'
 import { TechnologyMat } from './TechnologyMat'
 
-type Tab = 'realm' | 'city' | 'hero' | 'quests' | 'tech' | 'craft' | 'diplomacy' | 'dashboard'
+type Tab = 'realm' | 'city' | 'hero' | 'quests' | 'tech' | 'craft' | 'diplomacy' | 'dashboard' | 'lore'
 
 const FOCUS_TO_TAB: Record<FocusAction, Tab> = {
   expand: 'realm',
   build: 'city',
   research: 'tech',
   quest: 'quests',
+  lore: 'lore',
   diplomacy: 'diplomacy',
   dashboard: 'dashboard',
 }
@@ -45,6 +47,7 @@ const TAB_TO_FOCUS: Partial<Record<Tab, FocusAction>> = {
   city: 'build',
   tech: 'research',
   quests: 'quest',
+  lore: 'lore',
   diplomacy: 'diplomacy',
   dashboard: 'dashboard',
 }
@@ -120,6 +123,7 @@ export function GameShell({
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'dashboard', label: 'Dash' },
+    { id: 'lore', label: 'LORE' },
     { id: 'realm', label: 'Realm' },
     { id: 'city', label: 'City' },
     { id: 'hero', label: 'Hero' },
@@ -191,6 +195,8 @@ export function GameShell({
             {tab === 'dashboard' && (
               <PlayerDashboard state={state} player={human} faction={faction} />
             )}
+
+            {tab === 'lore' && <LoreCodex state={state} />}
 
             {tab === 'realm' && (
               <RealmPanel
