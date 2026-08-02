@@ -1,0 +1,25 @@
+{
+  "name": "ASTERRA — Empires of Legend",
+  "short_name": "ASTERRA",
+  "description": "Empire building, squad combat, and heroic quests on a living hex map.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0e0c0a",
+  "theme_color": "#0e0c0a",
+  "icons": [
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./asterra.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
