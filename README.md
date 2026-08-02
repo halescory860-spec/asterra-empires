@@ -39,6 +39,7 @@ Works in portrait and landscape, with safe-area support for notched iPhones.
 - **Procedural hex map** — forests, deserts, mountains, ruins, dungeons, and more
 - **Cities & buildings** — farms, mines, mage towers, universities, walls
 - **Technology tree** — military, magic, and civilization paths ending at the Sky Forge
+- **LORE Engine** — Legends, Origins, Records, Echoes unlocked by play
 - **Customizable heroes** — classes, perks, equipment, and crafting
 - **Quest deck** — accept missions and complete them on the map
 - **4-unit squad combat** — cover, flanking, suppression, healing, boss fights

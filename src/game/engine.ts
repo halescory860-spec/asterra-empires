@@ -14,6 +14,15 @@ import {
   UNIT_ROLES,
 } from './data'
 import { axialDistance, findTile, hexNeighbors, tilesInRadius } from './hex'
+import {
+  createLoreState,
+  unlockBossLore,
+  unlockCityLore,
+  unlockQuestLore,
+  unlockRandomWorldLore,
+  unlockTechLore,
+  unlockTerrainLore,
+} from './lore'
 import { createRng, type Rng } from './rng'
 import type {
   Boss,
@@ -247,7 +256,8 @@ export function createGame(config: SetupConfig): GameState {
     }
   })
 
-  return {
+  const humanFaction = players[0]!.factionId
+  let loreState: GameState = {
     phase: 'playing',
     seed,
     turn: 1,
@@ -261,13 +271,24 @@ export function createGame(config: SetupConfig): GameState {
     bosses,
     diplomacy: [],
     combat: null,
+    lore: createLoreState(humanFaction, 1, 0),
     eventLog: [
       'The continent of Asterra awakens. Dragons return. Choose your path to legend.',
+      'LORE Engine online — Legends, Origins, Records, and Echoes await discovery.',
       `${players[0]!.name} of ${FACTIONS.find((f) => f.id === players[0]!.factionId)!.name} claims the field.`,
     ],
     winnerId: null,
     winReason: null,
   }
+
+  const capital = Object.values(cities).find((c) => c.ownerId === 0)
+  if (capital) {
+    const capitalTile = findTile(map, capital.q, capital.r)
+    if (capitalTile) loreState = unlockTerrainLore(loreState, capitalTile.terrain, 0)
+    loreState = unlockCityLore(loreState, capital.name, 0)
+  }
+
+  return loreState
 }
 
 function pushLog(state: GameState, msg: string): GameState {
@@ -354,6 +375,11 @@ export function endTurn(state: GameState): GameState {
   let next = state
   const current = next.players.find((p) => p.id === next.activePlayerId)!
 
+  // LORE Engine: periodic world revelations for the human chronicler
+  if (current.isHuman && current.id === 0 && state.turn % 3 === 0) {
+    next = unlockRandomWorldLore(next, current.id)
+  }
+
   // Reset moves for current player's squads
   const squads = { ...next.squads }
   for (const sid of current.squads) {
@@ -425,6 +451,7 @@ export function claimTile(state: GameState, q: number, r: number): GameState {
       resources: addResources(p.resources, { [tile.resource!]: 1 }),
     }))
   }
+  if (player.isHuman) next = unlockTerrainLore(next, tile.terrain, player.id)
   return pushLog(next, `${player.name} claims the ${TERRAIN_META[tile.terrain].label}.`)
 }
 
@@ -444,10 +471,13 @@ export function moveSquad(state: GameState, squadId: string, q: number, r: numbe
   }
 
   // Explore
+  const newlyExplored: typeof state.map = []
   const map = state.map.map((t) => {
     if (axialDistance(t.q, t.r, q, r) <= 1 + factionOf(player).bonuses.exploration) {
       if (!t.exploredBy.includes(player.id)) {
-        return { ...t, exploredBy: [...t.exploredBy, player.id] }
+        const explored = { ...t, exploredBy: [...t.exploredBy, player.id] }
+        newlyExplored.push(explored)
+        return explored
       }
     }
     return t
@@ -463,6 +493,16 @@ export function moveSquad(state: GameState, squadId: string, q: number, r: numbe
     ...state,
     map,
     squads: { ...state.squads, [squadId]: moved },
+  }
+
+  // LORE: first contact with terrain types
+  if (player.isHuman) {
+    for (const t of newlyExplored) {
+      next = unlockTerrainLore(next, t.terrain, player.id)
+    }
+    if (!tile.exploredBy.includes(player.id)) {
+      next = unlockTerrainLore(next, tile.terrain, player.id)
+    }
   }
 
   // Raid
@@ -554,6 +594,7 @@ export function foundCity(state: GameState, squadId: string): GameState {
       t.q === squad.q && t.r === squad.r ? { ...t, ownerId: player.id } : t,
     ),
   }
+  if (player.isHuman) next = unlockCityLore(next, city.name, player.id)
   return pushLog(next, `${player.name} founds ${city.name}.`)
 }
 
@@ -607,6 +648,8 @@ export function researchTech(state: GameState, techId: string): GameState {
     }
   })
   next = pushLog(next, `${player.name} unlocks ${tech.name}.`)
+  if (player.isHuman) next = unlockTechLore(next, tech.name, player.id)
+  if (techId === 'skyForge' && player.isHuman) next = unlockRandomWorldLore(next, player.id)
   return checkVictory(next)
 }
 
@@ -653,6 +696,8 @@ function completeQuest(state: GameState, questId: string): GameState {
   )
   next = { ...next, quests }
   next = pushLog(next, `Quest complete: ${quest.title}!`)
+  const completer = next.players.find((p) => p.id === playerId)
+  if (completer?.isHuman) next = unlockQuestLore(next, quest.title, playerId)
   return checkVictory(next)
 }
 
@@ -940,6 +985,8 @@ function finishBossVictory(state: GameState, playerId: number, bossId: string): 
     combat: null,
   }
   next = pushLog(next, `${boss.name} is slain! Loot claimed: ${boss.loot}.`)
+  const slayer = next.players.find((p) => p.id === playerId)
+  if (slayer?.isHuman) next = unlockBossLore(next, boss.name, playerId)
   return checkVictory(next)
 }
 
