@@ -13,7 +13,18 @@ Then open the local URL Vite prints (usually `http://localhost:5173`).
 
 ```bash
 npm run build
+npm run preview
 ```
+
+### iOS / Safari
+
+The game is a mobile web app (PWA-ready). Same gameplay; Safari-friendly layout and touch controls.
+
+1. Open the site in **Safari** (not an in-app browser).
+2. Tap **Share** → **Add to Home Screen** for fullscreen play.
+3. Use finger taps on the hex map; panels scroll independently.
+
+Works in portrait and landscape, with safe-area support for notched iPhones.
 
 ## What’s in the box
 

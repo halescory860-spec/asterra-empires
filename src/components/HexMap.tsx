@@ -1,8 +1,7 @@
+import { useMemo, useRef } from 'react'
 import { FACTIONS, TERRAIN_META } from '../game/data'
 import { cubeToPixel, hexPolygonPoints } from '../game/hex'
 import type { GameState } from '../game/types'
-
-const SIZE = 28
 
 export function HexMap({
   state,
@@ -13,11 +12,19 @@ export function HexMap({
   selected: { q: number; r: number } | null
   onSelect: (q: number, r: number) => void
 }) {
+  const touchStart = useRef<{ x: number; y: number } | null>(null)
+
+  // Larger hexes on phones for reliable finger taps.
+  const size = useMemo(() => {
+    if (typeof window === 'undefined') return 28
+    return window.matchMedia('(max-width: 700px)').matches ? 34 : 28
+  }, [])
+
   const humanId = state.players.find((p) => p.isHuman)?.id ?? 0
-  const positions = state.map.map((t) => cubeToPixel(t.q, t.r, SIZE))
+  const positions = state.map.map((t) => cubeToPixel(t.q, t.r, size))
   const xs = positions.map((p) => p.x)
   const ys = positions.map((p) => p.y)
-  const pad = SIZE * 2
+  const pad = size * 2
   const minX = Math.min(...xs) - pad
   const maxX = Math.max(...xs) + pad
   const minY = Math.min(...ys) - pad
@@ -35,7 +42,7 @@ export function HexMap({
       aria-label="Asterra hex map"
     >
       {state.map.map((tile) => {
-        const { x, y } = cubeToPixel(tile.q, tile.r, SIZE)
+        const { x, y } = cubeToPixel(tile.q, tile.r, size)
         const explored = tile.exploredBy.includes(humanId)
         const terrain = TERRAIN_META[tile.terrain]
         const owner = tile.ownerId !== null ? state.players.find((p) => p.id === tile.ownerId) : null
@@ -54,10 +61,30 @@ export function HexMap({
         const stroke = faction?.accent ?? 'rgba(212,165,116,0.25)'
 
         return (
-          <g key={`${tile.q},${tile.r}`} onClick={() => onSelect(tile.q, tile.r)}>
+          <g
+            key={`${tile.q},${tile.r}`}
+            onClick={() => onSelect(tile.q, tile.r)}
+            onTouchStart={(e) => {
+              const t = e.changedTouches[0]
+              if (t) touchStart.current = { x: t.clientX, y: t.clientY }
+            }}
+            onTouchEnd={(e) => {
+              const start = touchStart.current
+              const t = e.changedTouches[0]
+              touchStart.current = null
+              if (!start || !t) return
+              const dx = Math.abs(t.clientX - start.x)
+              const dy = Math.abs(t.clientY - start.y)
+              // Treat as tap only when the finger barely moved (allow map pan).
+              if (dx < 12 && dy < 12) {
+                e.preventDefault()
+                onSelect(tile.q, tile.r)
+              }
+            }}
+          >
             <polygon
               className={`hex ${isSelected ? 'selected' : ''} ${owner ? 'owned' : ''}`}
-              points={hexPolygonPoints(x, y, SIZE - 1)}
+              points={hexPolygonPoints(x, y, size - 1)}
               fill={fill}
               stroke={isSelected ? undefined : stroke}
               strokeWidth={owner ? 2 : 1}
