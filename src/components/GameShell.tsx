@@ -164,7 +164,7 @@ export function GameShell({
 
       <div className="shell__main">
         <div className="map-wrap">
-          <div className="map-tile-banner">Modular Map Tiles · hex geography locks together each game</div>
+          <div className="map-tile-banner">3D World Tabletop · look down across Asterra</div>
           <HexMap
             state={state}
             selected={selected}

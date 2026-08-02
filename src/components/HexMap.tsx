@@ -1,6 +1,12 @@
 import { useMemo, useRef } from 'react'
 import { FACTIONS, TERRAIN_META } from '../game/data'
-import { cubeToPixel, hexPolygonPoints } from '../game/hex'
+import {
+  cubeToPixel,
+  hexExtrudeFaces,
+  hexPolygonPoints,
+  shadeColor,
+  terrainHeight,
+} from '../game/hex'
 import type { GameState, TerrainType } from '../game/types'
 
 function TerrainDecor({
@@ -255,19 +261,32 @@ export function HexMap({
   const humanId = state.players.find((p) => p.isHuman)?.id ?? 0
   const hintSet = useMemo(() => new Set(moveHints.map(([q, r]) => `${q},${r}`)), [moveHints])
 
+  const sortedTiles = useMemo(
+    () =>
+      [...state.map].sort((a, b) => {
+        const pa = cubeToPixel(a.q, a.r, size)
+        const pb = cubeToPixel(b.q, b.r, size)
+        return pa.y - pb.y || pa.x - pb.x
+      }),
+    [state.map, size],
+  )
+
   const positions = state.map.map((t) => cubeToPixel(t.q, t.r, size))
   const xs = positions.map((p) => p.x)
   const ys = positions.map((p) => p.y)
-  const pad = size * 2.4
+  const maxH = 20
+  const pad = size * 2.8
   const minX = Math.min(...xs) - pad
   const maxX = Math.max(...xs) + pad
-  const minY = Math.min(...ys) - pad
-  const maxY = Math.max(...ys) + pad
+  const minY = Math.min(...ys) - pad - maxH
+  const maxY = Math.max(...ys) + pad + 8
   const width = maxX - minX
   const height = maxY - minY
+  const cx = (minX + maxX) / 2
+  const cy = (minY + maxY) / 2
 
   return (
-    <div className="map-stage">
+    <div className="map-stage world-view">
       <div className="map-legend" aria-hidden>
         <span><i className="lg lg-city" /> City</span>
         <span><i className="lg lg-capital" /> Capital</span>
@@ -275,160 +294,218 @@ export function HexMap({
         <span><i className="lg lg-boss" /> Boss</span>
         <span><i className="lg lg-quest" /> Quest</span>
         <span><i className="lg lg-move" /> Can move</span>
-        <span>Tiles lock as a modular hex board</span>
+        <span>3D world tabletop</span>
       </div>
 
-      <svg
-        className="map-svg"
-        width={width}
-        height={height}
-        viewBox={`${minX} ${minY} ${width} ${height}`}
-        role="img"
-        aria-label="Asterra hex map"
-      >
-        <defs>
-          <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1.5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        {state.map.map((tile) => {
-          const { x, y } = cubeToPixel(tile.q, tile.r, size)
-          const explored = tile.exploredBy.includes(humanId)
-          const terrain = TERRAIN_META[tile.terrain]
-          const owner = tile.ownerId !== null ? state.players.find((p) => p.id === tile.ownerId) : null
-          const faction = owner ? FACTIONS.find((f) => f.id === owner.factionId) : null
-          const isSelected = selected?.q === tile.q && selected?.r === tile.r
-          const canMove = hintSet.has(`${tile.q},${tile.r}`)
-          const city = Object.values(state.cities).find((c) => c.q === tile.q && c.r === tile.r)
-          const squad = Object.values(state.squads).find(
-            (s) => s.q === tile.q && s.r === tile.r && s.units.some((u) => u.hp > 0),
-          )
-          const boss = state.bosses.find((b) => !b.defeated && b.q === tile.q && b.r === tile.r)
-          const quest = state.quests.find(
-            (q) =>
-              !q.completed &&
-              q.locationQ === tile.q &&
-              q.locationR === tile.r &&
-              (q.acceptedBy === humanId || q.acceptedBy === null),
-          )
-
-          const fill = explored ? terrain.color : '#14110e'
-          const stroke = isSelected
-            ? '#e8c99a'
-            : canMove
-              ? '#5aa0a0'
-              : faction?.accent ?? 'rgba(212,165,116,0.35)'
-
-          return (
-            <g
-              key={`${tile.q},${tile.r}`}
-              onClick={() => onSelect(tile.q, tile.r)}
-              onTouchStart={(e) => {
-                const t = e.changedTouches[0]
-                if (t) touchStart.current = { x: t.clientX, y: t.clientY }
-              }}
-              onTouchEnd={(e) => {
-                const start = touchStart.current
-                const t = e.changedTouches[0]
-                touchStart.current = null
-                if (!start || !t) return
-                const dx = Math.abs(t.clientX - start.x)
-                const dy = Math.abs(t.clientY - start.y)
-                if (dx < 12 && dy < 12) {
-                  e.preventDefault()
-                  onSelect(tile.q, tile.r)
-                }
-              }}
+      <div className="world-scene">
+        <div className="world-sky" aria-hidden />
+        <div className="world-horizon" aria-hidden />
+        <div className="world-table">
+          <div className="world-table__lip" aria-hidden />
+          <div className="world-board">
+            <svg
+              className="map-svg map-svg--3d"
+              width={width}
+              height={height}
+              viewBox={`${minX} ${minY} ${width} ${height}`}
+              role="img"
+              aria-label="Asterra three-dimensional world map"
             >
-              {/* Modular tile base + raised face so hexes read as locking components */}
-              <polygon
-                className="hex-tile-base"
-                points={hexPolygonPoints(x, y + 1.5, size - 0.4)}
+              <defs>
+                <radialGradient id="worldGlow" cx="50%" cy="45%" r="55%">
+                  <stop offset="0%" stopColor="rgba(232,201,154,0.18)" />
+                  <stop offset="55%" stopColor="rgba(61,122,122,0.08)" />
+                  <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+                </radialGradient>
+                <linearGradient id="sideShade" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
+                  <stop offset="100%" stopColor="rgba(0,0,0,0.35)" />
+                </linearGradient>
+                <filter id="tileShadow" x="-40%" y="-40%" width="180%" height="180%">
+                  <feDropShadow dx="0" dy="3" stdDeviation="2.2" floodColor="#000" floodOpacity="0.45" />
+                </filter>
+              </defs>
+
+              <ellipse
+                cx={cx}
+                cy={maxY - pad * 0.35}
+                rx={(maxX - minX) * 0.42}
+                ry={size * 1.1}
                 fill="rgba(0,0,0,0.35)"
-                stroke="none"
               />
-              <polygon
-                className={`hex ${isSelected ? 'selected' : ''} ${owner ? 'owned' : ''} ${canMove ? 'movable' : ''}`}
-                points={hexPolygonPoints(x, y, size - 1.2)}
-                fill={fill}
-                stroke={stroke}
-                strokeWidth={isSelected ? 3 : canMove ? 2.4 : owner ? 2 : 1.4}
-                opacity={explored ? 1 : 0.45}
-              />
-              <polygon
-                className="hex-tile-bevel"
-                points={hexPolygonPoints(x, y - 0.6, size - 3.5)}
-                fill="none"
-                stroke="rgba(255,255,255,0.12)"
-                strokeWidth={1}
-                opacity={explored ? 1 : 0.3}
-              />
+              <circle cx={cx} cy={cy} r={Math.max(width, height) * 0.42} fill="url(#worldGlow)" />
 
-              {explored && <TerrainDecor terrain={tile.terrain} x={x} y={y} size={size} />}
+              {sortedTiles.map((tile) => {
+                const elev = terrainHeight(tile.terrain)
+                const { x, y: baseY } = cubeToPixel(tile.q, tile.r, size)
+                const y = baseY
+                const topY = baseY - elev
+                const explored = tile.exploredBy.includes(humanId)
+                const terrain = TERRAIN_META[tile.terrain]
+                const owner = tile.ownerId !== null ? state.players.find((p) => p.id === tile.ownerId) : null
+                const faction = owner ? FACTIONS.find((f) => f.id === owner.factionId) : null
+                const isSelected = selected?.q === tile.q && selected?.r === tile.r
+                const canMove = hintSet.has(`${tile.q},${tile.r}`)
+                const city = Object.values(state.cities).find((c) => c.q === tile.q && c.r === tile.r)
+                const squad = Object.values(state.squads).find(
+                  (s) => s.q === tile.q && s.r === tile.r && s.units.some((u) => u.hp > 0),
+                )
+                const boss = state.bosses.find((b) => !b.defeated && b.q === tile.q && b.r === tile.r)
+                const quest = state.quests.find(
+                  (q) =>
+                    !q.completed &&
+                    q.locationQ === tile.q &&
+                    q.locationR === tile.r &&
+                    (q.acceptedBy === humanId || q.acceptedBy === null),
+                )
 
-              {explored && !city && tile.resource && (
-                <circle cx={x + size * 0.35} cy={y - size * 0.35} r={3.2} fill="#e8c99a" stroke="#1a1410" strokeWidth={0.8} />
-              )}
+                const fill = explored ? terrain.color : '#14110e'
+                const stroke = isSelected
+                  ? '#e8c99a'
+                  : canMove
+                    ? '#5aa0a0'
+                    : faction?.accent ?? 'rgba(212,165,116,0.35)'
+                const faces = hexExtrudeFaces(x, y, size - 1.2, elev)
 
-              {explored && !city && !squad && !boss && (
-                <text x={x} y={y + size * 0.55} textAnchor="middle" className="terrain-abbr" fill="rgba(240,230,212,0.7)">
-                  {terrain.label.slice(0, 3)}
-                </text>
-              )}
+                return (
+                  <g
+                    key={`${tile.q},${tile.r}`}
+                    className="hex-prism"
+                    filter="url(#tileShadow)"
+                    onClick={() => onSelect(tile.q, tile.r)}
+                    onTouchStart={(e) => {
+                      const t = e.changedTouches[0]
+                      if (t) touchStart.current = { x: t.clientX, y: t.clientY }
+                    }}
+                    onTouchEnd={(e) => {
+                      const start = touchStart.current
+                      const t = e.changedTouches[0]
+                      touchStart.current = null
+                      if (!start || !t) return
+                      const dx = Math.abs(t.clientX - start.x)
+                      const dy = Math.abs(t.clientY - start.y)
+                      if (dx < 12 && dy < 12) {
+                        e.preventDefault()
+                        onSelect(tile.q, tile.r)
+                      }
+                    }}
+                  >
+                    <polygon points={faces.left} fill={shadeColor(fill, -40)} opacity={explored ? 0.95 : 0.4} />
+                    <polygon points={faces.bottom} fill={shadeColor(fill, -55)} opacity={explored ? 0.95 : 0.4} />
+                    <polygon points={faces.right} fill={shadeColor(fill, -25)} opacity={explored ? 0.95 : 0.4} />
+                    <polygon points={faces.left} fill="url(#sideShade)" opacity={0.35} />
+                    <polygon points={faces.right} fill="url(#sideShade)" opacity={0.2} />
 
-              {!explored && (
-                <text x={x} y={y + 3} textAnchor="middle" className="fog-label" fill="rgba(168,152,128,0.55)">
-                  ?
-                </text>
-              )}
+                    <polygon
+                      className={`hex ${isSelected ? 'selected' : ''} ${owner ? 'owned' : ''} ${canMove ? 'movable' : ''}`}
+                      points={hexPolygonPoints(x, topY, size - 1.2)}
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth={isSelected ? 3 : canMove ? 2.4 : owner ? 2 : 1.2}
+                      opacity={explored ? 1 : 0.45}
+                    />
+                    <polygon
+                      points={hexPolygonPoints(x, topY - 0.8, size - 3.8)}
+                      fill="none"
+                      stroke="rgba(255,255,255,0.16)"
+                      strokeWidth={1}
+                      opacity={explored ? 1 : 0.25}
+                    />
 
-              {explored && quest && !city && <QuestMarker x={x + size * 0.28} y={y - size * 0.2} size={size} />}
+                    {explored && <TerrainDecor terrain={tile.terrain} x={x} y={topY} size={size} />}
 
-              {explored && boss && !city && <BossMarker x={x} y={y} size={size} name={boss.name} />}
+                    {explored && !city && tile.resource && (
+                      <circle
+                        cx={x + size * 0.32}
+                        cy={topY - size * 0.32}
+                        r={3.2}
+                        fill="#e8c99a"
+                        stroke="#1a1410"
+                        strokeWidth={0.8}
+                      />
+                    )}
 
-              {explored && squad && !city && (
-                <SquadMarker
-                  x={x}
-                  y={boss ? y + size * 0.35 : y}
-                  size={size}
-                  accent={FACTIONS.find((f) => f.id === state.players.find((p) => p.id === squad.ownerId)?.factionId)?.accent ?? '#d4a574'}
-                  isMine={squad.ownerId === humanId}
-                  label={squad.ownerId === humanId ? 'You' : 'Enemy'}
-                />
-              )}
+                    {explored && !city && !squad && !boss && (
+                      <text
+                        x={x}
+                        y={topY + size * 0.5}
+                        textAnchor="middle"
+                        className="terrain-abbr"
+                        fill="rgba(240,230,212,0.75)"
+                      >
+                        {terrain.label.slice(0, 3)}
+                      </text>
+                    )}
 
-              {explored && city && (
-                <CityMarker
-                  x={x}
-                  y={y - size * 0.05}
-                  size={size}
-                  name={city.name}
-                  isCapital={city.isCapital === city.ownerId}
-                  color={FACTIONS.find((f) => f.id === state.players.find((p) => p.id === city.ownerId)?.factionId)?.color ?? '#5a4030'}
-                  accent={FACTIONS.find((f) => f.id === state.players.find((p) => p.id === city.ownerId)?.factionId)?.accent ?? '#d4a574'}
-                  level={city.level}
-                />
-              )}
+                    {!explored && (
+                      <text x={x} y={topY + 3} textAnchor="middle" className="fog-label" fill="rgba(168,152,128,0.55)">
+                        ?
+                      </text>
+                    )}
 
-              {explored && city && squad && (
-                <SquadMarker
-                  x={x + size * 0.42}
-                  y={y + size * 0.42}
-                  size={size * 0.75}
-                  accent={FACTIONS.find((f) => f.id === state.players.find((p) => p.id === squad.ownerId)?.factionId)?.accent ?? '#d4a574'}
-                  isMine={squad.ownerId === humanId}
-                  label=""
-                />
-              )}
-            </g>
-          )
-        })}
-      </svg>
+                    {explored && quest && !city && (
+                      <QuestMarker x={x + size * 0.28} y={topY - size * 0.2} size={size} />
+                    )}
+
+                    {explored && boss && !city && <BossMarker x={x} y={topY} size={size} name={boss.name} />}
+
+                    {explored && squad && !city && (
+                      <SquadMarker
+                        x={x}
+                        y={boss ? topY + size * 0.35 : topY}
+                        size={size}
+                        accent={
+                          FACTIONS.find(
+                            (f) => f.id === state.players.find((p) => p.id === squad.ownerId)?.factionId,
+                          )?.accent ?? '#d4a574'
+                        }
+                        isMine={squad.ownerId === humanId}
+                        label={squad.ownerId === humanId ? 'You' : 'Enemy'}
+                      />
+                    )}
+
+                    {explored && city && (
+                      <CityMarker
+                        x={x}
+                        y={topY - size * 0.08}
+                        size={size}
+                        name={city.name}
+                        isCapital={city.isCapital === city.ownerId}
+                        color={
+                          FACTIONS.find(
+                            (f) => f.id === state.players.find((p) => p.id === city.ownerId)?.factionId,
+                          )?.color ?? '#5a4030'
+                        }
+                        accent={
+                          FACTIONS.find(
+                            (f) => f.id === state.players.find((p) => p.id === city.ownerId)?.factionId,
+                          )?.accent ?? '#d4a574'
+                        }
+                        level={city.level}
+                      />
+                    )}
+
+                    {explored && city && squad && (
+                      <SquadMarker
+                        x={x + size * 0.42}
+                        y={topY + size * 0.42}
+                        size={size * 0.75}
+                        accent={
+                          FACTIONS.find(
+                            (f) => f.id === state.players.find((p) => p.id === squad.ownerId)?.factionId,
+                          )?.accent ?? '#d4a574'
+                        }
+                        isMine={squad.ownerId === humanId}
+                        label=""
+                      />
+                    )}
+                  </g>
+                )
+              })}
+            </svg>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
