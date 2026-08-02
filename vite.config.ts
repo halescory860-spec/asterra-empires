@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Relative base helps iOS Safari / home-screen installs on varied hosts.
+// Project Pages URL: https://<user>.github.io/asterra-empires/
 export default defineConfig({
-  base: './',
+  base: '/asterra-empires/',
   plugins: [react()],
   server: {
     host: true,

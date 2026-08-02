@@ -2,11 +2,18 @@
 
 A tabletop strategy RPG that combines Civilization-style empire building, Gears of War-inspired squad combat, and Skyrim-like heroic exploration on a living hex map.
 
-## Play
+## Play on your phone
+
+**Live site:** https://halescory860-spec.github.io/asterra-empires/
+
+1. Open that link in **Safari**
+2. Optional: Share → **Add to Home Screen** for fullscreen play
+
+## Play locally
 
 ```bash
 npm install
-npm run dev
+npm run dev -- --host
 ```
 
 Then open the local URL Vite prints (usually `http://localhost:5173`).
